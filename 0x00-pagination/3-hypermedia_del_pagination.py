@@ -56,19 +56,18 @@ class Server:
         assert index < dataset_size
 
         data = []
-        next_index = index
-        for _ in range(page_size):
-            while not indexed_data.get(
-                next_index
-            ) and next_index < dataset_size:
-                next_index += 1
-            if next_index < dataset_size:
-                data.append(indexed_data[next_index])
-            next_index += 1
+        current_index = index
+        while len(data) < page_size and current_index < dataset_size:
+            item = indexed_data.get(current_index)
+            if item:
+                data.append(item)
+            current_index += 1
+
+        next_index = current_index if current_index < dataset_size else None
 
         return {
             "index": index,
             "data": data,
             "page_size": page_size,
-            "next_index": next_index if next_index < dataset_size else None,
+            "next_index": next_index,
         }
