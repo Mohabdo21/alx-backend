@@ -60,6 +60,9 @@ class Server:
         while items_added < page_size and current_index < dataset_size:
             item = indexed_data.get(current_index)
             if item:
+                if items_added == 0:
+                    index = current_index
+
                 data.append(item)
                 items_added += 1
             current_index += 1
