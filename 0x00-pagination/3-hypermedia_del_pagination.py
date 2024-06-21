@@ -55,12 +55,14 @@ class Server:
 
         data = []
         current_index = index
+        items_added = 0
 
-        while len(data) < page_size and current_index < dataset_size:
+        while items_added < page_size and current_index < dataset_size:
             item = indexed_data.get(current_index)
             if item:
                 data.append(item)
-                current_index += 1
+                items_added += 1
+            current_index += 1
 
         next_index = current_index if current_index < dataset_size else None
 
