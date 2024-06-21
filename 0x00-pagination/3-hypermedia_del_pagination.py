@@ -61,7 +61,7 @@ class Server:
             item = indexed_data.get(current_index)
             if item:
                 data.append(item)
-            current_index += 1
+                current_index += 1
 
         next_index = current_index if current_index < dataset_size else None
 
