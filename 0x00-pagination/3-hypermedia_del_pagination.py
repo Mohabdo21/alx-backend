@@ -46,29 +46,14 @@ class Server:
         Returns:
             dict: Paginated data and related information.
         """
-        assert isinstance(index, int) and index >= 0
-        assert isinstance(page_size, int) and page_size > 0
-
-        indexed_data = self.indexed_dataset()
-        dataset_size = len(indexed_data)
-        assert index < dataset_size
-
-        data = []
-        current_index = index
-        items_added = 0
-
-        while items_added < page_size and current_index < dataset_size:
-            item = indexed_data.get(current_index)
-            if item:
-                data.append(item)
-                items_added += 1
-            current_index += 1
-
-        next_index = current_index if current_index < dataset_size else None
-
-        return {
-            "index": index,
-            "data": data,
-            "page_size": page_size,
-            "next_index": next_index,
-        }
+        f_dataset = []
+        dataset = self.indexed_dataset()
+        index = 0 if index is None else index
+        keys = sorted(dataset.keys())
+        assert index >= 0 and index <= keys[-1]
+        [f_dataset.append(i)
+         for i in keys if i >= index and len(f_dataset) <= page_size]
+        data = [dataset[v] for v in f_dataset[:-1]]
+        next_index = f_dataset[-1] if len(f_dataset) - page_size == 1 else None
+        return {'index': index, 'data': data,
+                'page_size': len(data), 'next_index': next_index}
