@@ -1,0 +1,45 @@
+# Python
+*.py[cod]
+*.pyd
+*.pyo
+*.pyz
+__pycache__
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+
+# JavaScript
+*.log
+
+# Environment files
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
