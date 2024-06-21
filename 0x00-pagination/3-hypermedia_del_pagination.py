@@ -35,9 +35,7 @@ class Server:
                                       for i in range(len(dataset))}
         return self.__indexed_dataset
 
-    def get_hyper_index(
-        self, index: int = 0, page_size: int = 10
-    ) -> Dict:
+    def get_hyper_index(self, index: int = 0, page_size: int = 10) -> Dict:
         """
         Returns paginated data starting from the given index.
 
@@ -57,14 +55,12 @@ class Server:
 
         data = []
         current_index = index
-        items_added = 0
 
-        while items_added < page_size and current_index < dataset_size:
+        while len(data) < page_size and current_index < dataset_size:
             item = indexed_data.get(current_index)
             if item:
                 data.append(item)
-                items_added += 1
-            current_index += 1
+                current_index += 1
 
         next_index = current_index if current_index < dataset_size else None
 
