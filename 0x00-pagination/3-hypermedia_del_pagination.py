@@ -30,12 +30,11 @@ class Server:
         """Dataset indexed by sorting position, starting at 0"""
         if self.__indexed_dataset is None:
             dataset = self.dataset()
-            truncated_dataset = dataset[:1000]
             self.__indexed_dataset = {i: dataset[i]
                                       for i in range(len(dataset))}
         return self.__indexed_dataset
 
-    def get_hyper_index(self, index: int = 0, page_size: int = 10) -> Dict:
+    def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
         """
         Returns paginated data starting from the given index.
 
@@ -51,7 +50,9 @@ class Server:
 
         indexed_data = self.indexed_dataset()
         dataset_size = len(indexed_data)
-        assert index < dataset_size
+
+        if index is None or index >= dataset_size:
+            index = 0
 
         data = []
         current_index = index
@@ -61,7 +62,7 @@ class Server:
             item = indexed_data.get(current_index)
             if item:
                 if items_added == 0:
-                    index = current_index
+                    start_index = current_index
 
                 data.append(item)
                 items_added += 1
@@ -70,7 +71,7 @@ class Server:
         next_index = current_index if current_index < dataset_size else None
 
         return {
-            "index": index,
+            "index": start_index,
             "data": data,
             "page_size": page_size,
             "next_index": next_index,
