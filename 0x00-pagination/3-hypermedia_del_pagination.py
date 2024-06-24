@@ -2,77 +2,83 @@
 """
 Deletion-resilient hypermedia pagination
 """
-
 import csv
-from typing import Dict, List
+from typing import List, Dict, Union
 
 
 class Server:
-    """Server class to paginate a database of popular baby names."""
-
+    """Server class to paginate a database of popular baby names.
+    """
     DATA_FILE = "Popular_Baby_Names.csv"
 
     def __init__(self):
+        """Initialize the server instance
+        """
         self.__dataset = None
         self.__indexed_dataset = None
 
     def dataset(self) -> List[List]:
-        """Cached dataset"""
+        """Cached dataset that is loaded from a CSV file
+        """
         if self.__dataset is None:
-            with open(self.DATA_FILE, encoding="utf-8") as f:
+            with open(self.DATA_FILE) as f:
                 reader = csv.reader(f)
-                dataset = list(reader)
+                dataset = [row for row in reader]
             self.__dataset = dataset[1:]
 
         return self.__dataset
 
     def indexed_dataset(self) -> Dict[int, List]:
-        """Dataset indexed by sorting position, starting at 0"""
+        """Dataset indexed by sorting position, starting at 0
+        """
         if self.__indexed_dataset is None:
             dataset = self.dataset()
-            self.__indexed_dataset = {i: dataset[i]
-                                      for i in range(len(dataset))}
+            self.__indexed_dataset = {
+                i: dataset[i] for i in range(len(dataset))
+            }
         return self.__indexed_dataset
 
-    def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
+    def assert_index(self, index: int, page_size: int) -> None:
+        """Asserts if index is valid or not for the dataset
         """
-        Returns paginated data starting from the given index.
+        assert isinstance(index, int)
+        assert 0 <= index < len(self.dataset())
+        assert isinstance(page_size, int)
+        assert 0 < page_size
 
-        Args:
-            index (int): Starting index for pagination.
-            page_size (int): Number of items per page.
+    def get_hyper_index(self, index: int = 0,
+                        page_size: int = 10) -> Dict[str,
+                                                     Union[int, List, None]]:
+        """Get the hyper index of a dataset
+            The goal here is that if between two queries,
+            certain rows are removed from the dataset,
+            the user does not miss items from dataset when changing page.
 
-        Returns:
-            dict: Paginated data and related information.
+            Method takes two arguments:
+                index: index of the data to retrieve
+                page_size: number of items per page
+            Returns:
+                dictionary with the following key-value pairs:
+                    index: index of the current page
+                    next_index: index of the next page
+                    page_size: number of items per page
+                    data: list of the data in the current page
         """
-        assert isinstance(index, int) and index >= 0
-        assert isinstance(page_size, int) and page_size > 0
-
-        indexed_data = self.indexed_dataset()
-        dataset_size = len(indexed_data)
-
-        if index is None or index >= dataset_size:
-            index = 0
-
+        index = 0 if index is None else index
+        self.assert_index(index, page_size)
+        dataset = self.indexed_dataset()
         data = []
-        current_index = index
-        items_added = 0
-
-        while items_added < page_size and current_index < dataset_size:
-            item = indexed_data.get(current_index)
-            if item:
-                if items_added == 0:
-                    start_index = current_index
-
-                data.append(item)
-                items_added += 1
-            current_index += 1
-
-        next_index = current_index if current_index < dataset_size else None
-
+        next_index = index
+        count = 0
+        while count < page_size and next_index < len(dataset):
+            if next_index in dataset:
+                data.append(dataset[next_index])
+                count += 1
+            next_index += 1
+        next_index = None if count < page_size or not data else next_index
         return {
-            "index": start_index,
-            "data": data,
-            "page_size": page_size,
+            "index": index,
             "next_index": next_index,
+            "page_size": len(data),
+            "data": data
         }
