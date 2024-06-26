@@ -20,7 +20,7 @@ class FIFOCache(BaseCaching):
 
     def put(self, key: str, item: Any) -> None:
         """Add an item in the cache using FIFO algorithm."""
-        if key is not None and item is not None:
+        if key and item:
             self.cache_data[key] = item
             self.queue.append(key)
             if len(self.queue) > BaseCaching.MAX_ITEMS:
