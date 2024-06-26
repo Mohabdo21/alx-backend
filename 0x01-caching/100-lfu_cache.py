@@ -37,11 +37,7 @@ class LFUCache(BaseCaching):
                     k for k in self.key_order if self.usage_count[k] == min_cnt
                 ]
 
-                # If there are multiple least frequently used items, use FIFO
-                # if len(least_frequent_keys) > 1:
                 discard_key = least_frequent_keys[0]
-                # else:
-                #     discard_key = least_frequent_keys[0]
 
                 # - Remove the item from the cache
                 # - Remove the item from the usage count
