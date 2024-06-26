@@ -16,6 +16,7 @@ class FIFOCache(BaseCaching):
     def __init__(self) -> None:
         """Initialization the cache and queue."""
         super().__init__()
+        # A deque to keep track of the order of items
         self.queue = deque()
 
     def put(self, key: str, item: Any) -> None:
@@ -23,7 +24,9 @@ class FIFOCache(BaseCaching):
         if key and item:
             self.cache_data[key] = item
             self.queue.append(key)
+            # If the cache is full
             if len(self.queue) > BaseCaching.MAX_ITEMS:
+                # Remove the oldest item from the cache (FIFO)
                 discarded_key = self.queue.popleft()
                 del self.cache_data[discarded_key]
                 print(f"DISCARD: {discarded_key}")

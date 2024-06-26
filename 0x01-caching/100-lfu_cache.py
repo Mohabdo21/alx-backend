@@ -16,7 +16,9 @@ class LFUCache(BaseCaching):
     def __init__(self) -> None:
         """Initialize LFU algorithm."""
         super().__init__()
+        # A defaultdict to keep track of the usage count of items
         self.usage_count = defaultdict(int)
+        # A list to keep track of the order of items
         self.key_order = []
 
     def put(self, key: str, item: Any) -> None:
@@ -41,11 +43,17 @@ class LFUCache(BaseCaching):
                 else:
                     discard_key = least_frequent_keys[0]
 
+                # - Remove the item from the cache
+                # - Remove the item from the usage count
+                # - Remove the item from the key order
                 self.cache_data.pop(discard_key)
                 self.usage_count.pop(discard_key)
                 self.key_order.remove(discard_key)
                 print(f"DISCARD: {discard_key}")
 
+            # - Add the new item to the cache
+            # - Increment the usage count of the new item
+            # - Add the new key to the key order
             self.cache_data[key] = item
             self.usage_count[key] += 1
             self.key_order.append(key)

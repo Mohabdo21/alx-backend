@@ -16,14 +16,17 @@ class LRUCache(BaseCaching):
     def __init__(self) -> None:
         """Initialize LRU algorithm."""
         super().__init__()
+        # OrderedDict to keep track of the order of items
         self.cache_data = OrderedDict()
 
     def put(self, key: str, item: Any) -> None:
         """Add an item in the cache using LRU algorithm."""
         if key and item:
             self.cache_data[key] = item
+            # Move the key to the end of the OrderedDict (most recently used)
             self.cache_data.move_to_end(key)
             if len(self.cache_data) > BaseCaching.MAX_ITEMS:
+                # Remove the least recently used item from the cache
                 discarded_key = next(iter(self.cache_data))
                 del self.cache_data[discarded_key]
                 print(f"DISCARD: {discarded_key}")

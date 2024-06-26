@@ -15,6 +15,7 @@ class LIFOCache(BaseCaching):
     def __init__(self) -> None:
         """Initialize LIFO algorithm"""
         super().__init__()
+        # A list to keep track of the order of items
         self.keys = []
 
     def put(self, key: str, item: Any) -> None:
@@ -25,6 +26,7 @@ class LIFOCache(BaseCaching):
                 self.keys.remove(key)
             self.keys.append(key)
             if len(self.keys) > BaseCaching.MAX_ITEMS:
+                # Remove the most recently added item from the cache (LIFO)
                 discarded_key = self.keys.pop(-2)
                 del self.cache_data[discarded_key]
                 print(f"DISCARD: {discarded_key}")

@@ -15,6 +15,7 @@ class MRUCache(BaseCaching):
     def __init__(self) -> None:
         """Initialize MRU algorithm."""
         super().__init__()
+        # A list to keep track of the order of items
         self.keys = []
 
     def put(self, key: str, item: Any) -> None:
@@ -23,6 +24,7 @@ class MRUCache(BaseCaching):
             if key in self.cache_data:
                 self.keys.remove(key)
             elif len(self.cache_data) >= BaseCaching.MAX_ITEMS:
+                # Remove the most recently used item from the cache
                 discarded_key = self.keys.pop()
                 del self.cache_data[discarded_key]
                 print(f"DISCARD: {discarded_key}")
@@ -33,6 +35,7 @@ class MRUCache(BaseCaching):
     def get(self, key: str) -> Optional[Any]:
         """Get an item by key."""
         if key in self.cache_data:
+            # Move the key to the end of the list (most recently used)
             self.keys.remove(key)
             self.keys.append(key)
             return self.cache_data.get(key)
