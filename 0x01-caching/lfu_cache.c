@@ -93,33 +93,43 @@ CacheItem *find_lfu_item(LFUCache *cache)
 }
 
 /**
- * put_cache - Adds an item to the cache using the LFU algorithm.
+ * find_cache_item - Finds an item in the cache by key.
  * @cache: The LFU cache.
  * @key: The key associated with the cache item.
- * @item: The item to store in the cache.
+ *
+ * Return: Pointer to the cache item if found, NULL otherwise.
  */
-void put_cache(LFUCache *cache, const char *key, void *item)
+CacheItem *find_cache_item(LFUCache *cache, const char *key)
 {
 	CacheItem *current = cache->head;
-	CacheItem *new_item;
-	CacheItem *lfu_item;
 
-	/* Check if the item already exists in the cache */
 	while (current != NULL)
 	{
 		if (strcmp(current->key, key) == 0)
 		{
-			current->item = item;
-			current->usage_count++;
-			return;
+			return (current);
 		}
 		current = current->next;
 	}
+	return (NULL);
+}
+
+/**
+ * add_cache_item - Adds a new item to the cache.
+ * @cache: The LFU cache.
+ * @key: The key associated with the cache item.
+ * @item: The item to store in the cache.
+ *
+ * Return: 0 on success, -1 on failure.
+ */
+int add_cache_item(LFUCache *cache, const char *key, void *item)
+{
+	CacheItem *new_item;
 
 	/* If the cache is full, remove the least frequently used item */
 	if (cache->size >= MAX_ITEMS)
 	{
-		lfu_item = find_lfu_item(cache);
+		CacheItem *lfu_item = find_lfu_item(cache);
 
 		printf("DISCARD: %s\n", lfu_item->key);
 
@@ -130,7 +140,8 @@ void put_cache(LFUCache *cache, const char *key, void *item)
 		}
 		else
 		{
-			current = cache->head;
+			CacheItem *current = cache->head;
+
 			while (current != NULL && current->next != lfu_item)
 			{
 				current = current->next;
@@ -147,15 +158,41 @@ void put_cache(LFUCache *cache, const char *key, void *item)
 
 	/* Add the new item to the cache */
 	new_item = create_cache_item(key, item);
-
 	if (new_item == NULL)
 	{
-		return;
+		return (-1);
 	}
-
 	new_item->next = cache->head;
 	cache->head = new_item;
 	cache->size++;
+
+	return (0);
+}
+
+/**
+ * put_cache - Adds an item to the cache using the LFU algorithm.
+ * @cache: The LFU cache.
+ * @key: The key associated with the cache item.
+ * @item: The item to store in the cache.
+ */
+void put_cache(LFUCache *cache, const char *key, void *item)
+{
+	CacheItem *existing_item;
+
+	/* Check if the item already exists in the cache */
+	existing_item = find_cache_item(cache, key);
+	if (existing_item != NULL)
+	{
+		existing_item->item = item;
+		existing_item->usage_count++;
+		return;
+	}
+
+	/* Add the new item to the cache */
+	if (add_cache_item(cache, key, item) == -1)
+	{
+		fprintf(stderr, "Failed to add item to cache.\n");
+	}
 }
 
 /**
