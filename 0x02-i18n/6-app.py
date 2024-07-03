@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """ Basic Flask app """
+from typing import Dict, Union
+
 from flask import Flask, g, render_template, request
 from flask_babel import Babel
 
@@ -16,7 +18,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 babel = Babel(app)
 
-users = {
+users: Dict[int, Dict[str, Union[str, None]]] = {
     1: {"name": "Balou", "locale": "fr", "timezone": "Europe/Paris"},
     2: {"name": "Beyonce", "locale": "en", "timezone": "US/Central"},
     3: {"name": "Spock", "locale": "kg", "timezone": "Vulcan"},
@@ -24,7 +26,7 @@ users = {
 }
 
 
-def get_user():
+def get_user() -> Union[Dict[str, Union[str, None]], None]:
     """Returns a user dictionary or None"""
     user_id = request.args.get("login_as")
     if user_id is not None:
@@ -34,13 +36,13 @@ def get_user():
 
 
 @app.before_request
-def before_request():
+def before_request() -> None:
     """Executes before all other functions"""
     g.user = get_user()
 
 
 @babel.localeselector
-def get_locale():
+def get_locale() -> str:
     """Determine the best match with our supported languages"""
     # Locale from URL parameters
     locale = request.args.get("locale")
@@ -55,7 +57,7 @@ def get_locale():
 
 
 @app.route("/")
-def index():
+def index() -> str:
     """Route for index page"""
     return render_template("6-index.html")
 
