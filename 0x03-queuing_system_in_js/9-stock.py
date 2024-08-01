@@ -40,6 +40,11 @@ list_products: List[Product] = [
 ]
 
 
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    return make_response(jsonify({"status": "Internal Server Error"}), 500)
+
+
 def get_item_by_id(item_id: int) -> Optional[Product]:
     """
     Retrieve a product by its ID.
@@ -84,7 +89,18 @@ def reserve_stock_by_id(item_id: int, stock: int) -> None:
         item_id (int): The ID of the product.
         stock (int): The stock to reserve.
     """
-    client.set(f"item.{item_id}", stock)
+    try:
+        with client.pipeline() as pipe:
+            try:
+                pipe.watch(f"item.{item_id}")
+                pipe.multi()
+                pipe.set(f"item.{item_id}", stock)
+                pipe.execute()
+            except redis.WatchError:
+                raise Exception(
+                    "Race condition encountered during reservation")
+    except redis.ConnectionError:
+        raise ConnectionError("Failed to connect to Redis")
 
 
 @async_redis
@@ -99,7 +115,14 @@ def get_current_reserved_stock_by_id(item_id: int) -> int:
         int: The current reserved stock.
     """
     stock = client.get(f"item.{item_id}")
-    return int(stock) if stock else 0
+    try:
+        return int(stock) if stock else 0
+    except (ValueError, TypeError):
+        return 0
+
+
+def validate_item_id(item_id: int) -> bool:
+    return item_id > 0
 
 
 @app.route("/list_products", methods=["GET"])
@@ -110,6 +133,9 @@ def list_products_route() -> Response:
     Returns:
         Response: JSON response containing the list of all products.
     """
+    if not list_products:
+        return make_response(jsonify({"status": "No products available"}), 404)
+
     return jsonify(list_products)
 
 
@@ -125,6 +151,9 @@ async def get_product_route(item_id: int) -> Response:
         Response: JSON response containing the product details
         and current stock.
     """
+    if not validate_item_id(item_id):
+        return make_response(jsonify({"status": "Invalid product ID"}), 400)
+
     product_item = get_item_by_id(item_id)
     if not product_item:
         return make_response(jsonify({"status": "Product not found"}), 404)
@@ -149,6 +178,9 @@ async def reserve_product_route(item_id: int) -> Response:
     Returns:
         Response: JSON response containing the reservation status.
     """
+    if not validate_item_id(item_id):
+        return make_response(jsonify({"status": "Invalid product ID"}), 400)
+
     product_item = get_item_by_id(item_id)
     if not product_item:
         return make_response(jsonify({"status": "Product not found"}), 404)
