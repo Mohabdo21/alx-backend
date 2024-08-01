@@ -1,15 +1,18 @@
 import asyncio
 from functools import wraps
+from typing import Any, Callable, Dict, List, Optional
 
 import redis
-from flask import Flask, jsonify
+from flask import Flask, Response, jsonify, make_response
 
 app = Flask(__name__)
-app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
 client = redis.Redis()
 
+Product = Dict[str, Any]
+
 # Data: List of products
-list_products = [
+list_products: List[Product] = [
     {
         "itemId": 1,
         "itemName": "Suitcase 250",
@@ -37,7 +40,7 @@ list_products = [
 ]
 
 
-def get_item_by_id(item_id):
+def get_item_by_id(item_id: int) -> Optional[Product]:
     """
     Retrieve a product by its ID.
 
@@ -45,7 +48,7 @@ def get_item_by_id(item_id):
         item_id (int): The ID of the product.
 
     Returns:
-        dict: The product with the given ID, or None if not found.
+        Optional[Product]: The product with the given ID, or None if not found.
     """
     return next(
         (item for item in list_products if item["itemId"] == item_id),
@@ -53,19 +56,19 @@ def get_item_by_id(item_id):
     )
 
 
-def async_redis(method):
+def async_redis(method: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator to run a Redis method asynchronously.
 
     Args:
-        method (function): The Redis method to run asynchronously.
+        method (Callable[..., Any]): The Redis method to run asynchronously.
 
     Returns:
-        function: The wrapped asynchronous function.
+        Callable[..., Any]: The wrapped asynchronous function.
     """
 
     @wraps(method)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, method, *args, **kwargs)
 
@@ -73,7 +76,7 @@ def async_redis(method):
 
 
 @async_redis
-def reserve_stock_by_id(item_id, stock):
+def reserve_stock_by_id(item_id: int, stock: int) -> None:
     """
     Reserve stock for a product by its ID.
 
@@ -85,7 +88,7 @@ def reserve_stock_by_id(item_id, stock):
 
 
 @async_redis
-def get_current_reserved_stock_by_id(item_id):
+def get_current_reserved_stock_by_id(item_id: int) -> int:
     """
     Get the current reserved stock for a product by its ID.
 
@@ -100,7 +103,7 @@ def get_current_reserved_stock_by_id(item_id):
 
 
 @app.route("/list_products", methods=["GET"])
-def list_products_route():
+def list_products_route() -> Response:
     """
     List all products.
 
@@ -111,7 +114,7 @@ def list_products_route():
 
 
 @app.route("/list_products/<int:item_id>", methods=["GET"])
-async def get_product_route(item_id):
+async def get_product_route(item_id: int) -> Response:
     """
     Get product details including current stock.
 
@@ -124,7 +127,7 @@ async def get_product_route(item_id):
     """
     product_item = get_item_by_id(item_id)
     if not product_item:
-        return jsonify({"status": "Product not found"}), 404
+        return make_response(jsonify({"status": "Product not found"}), 404)
 
     try:
         reserved_stock = await get_current_reserved_stock_by_id(item_id)
@@ -132,11 +135,11 @@ async def get_product_route(item_id):
             reserved_stock
         return jsonify({**product_item, "currentQuantity": current_quantity})
     except Exception:
-        return jsonify({"status": "Internal Server Error"}), 500
+        return make_response(jsonify({"status": "Internal Server Error"}), 500)
 
 
 @app.route("/reserve_product/<int:item_id>", methods=["GET"])
-async def reserve_product_route(item_id):
+async def reserve_product_route(item_id: int) -> Response:
     """
     Reserve a product.
 
@@ -148,7 +151,7 @@ async def reserve_product_route(item_id):
     """
     product_item = get_item_by_id(item_id)
     if not product_item:
-        return jsonify({"status": "Product not found"}), 404
+        return make_response(jsonify({"status": "Product not found"}), 404)
 
     try:
         reserved_stock = await get_current_reserved_stock_by_id(item_id)
@@ -160,10 +163,10 @@ async def reserve_product_route(item_id):
         await reserve_stock_by_id(item_id, reserved_stock + 1)
         return jsonify({"status": "Reservation confirmed", "itemId": item_id})
     except Exception:
-        return jsonify({"status": "Internal Server Error"}), 500
+        return make_response(jsonify({"status": "Internal Server Error"}), 500)
 
 
-async def reset_products_stock():
+async def reset_products_stock() -> None:
     """
     Reset the stock for all products in Redis.
     """
