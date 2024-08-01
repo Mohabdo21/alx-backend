@@ -1,20 +1,22 @@
 import { expect } from "chai";
+import sinon from "sinon";
 import kue from "kue";
 import createPushNotificationsJobs from "./8-job";
 
 describe("createPushNotificationsJobs", () => {
   const queue = kue.createQueue();
 
-  before(() => {
-    kue.Job.testMode.enter();
+  beforeEach(() => {
+    sinon.stub(queue, "create").callsFake((type, data) => {
+      return {
+        save: sinon.stub().yields(null),
+        on: sinon.stub(),
+      };
+    });
   });
 
   afterEach(() => {
-    kue.Job.testMode.clear();
-  });
-
-  after(() => {
-    kue.Job.testMode.exit();
+    sinon.restore();
   });
 
   it("should throw an error if jobs is not an array", () => {
@@ -37,11 +39,12 @@ describe("createPushNotificationsJobs", () => {
 
     createPushNotificationsJobs(jobs, queue);
 
-    const createdJobs = kue.Job.testMode.jobs;
-    expect(createdJobs.length).to.equal(2);
-    expect(createdJobs[0].type).to.equal("push_notification_code_3");
-    expect(createdJobs[0].data).to.deep.equal(jobs[0]);
-    expect(createdJobs[1].type).to.equal("push_notification_code_3");
-    expect(createdJobs[1].data).to.deep.equal(jobs[1]);
+    expect(queue.create.calledTwice).to.be.true;
+    expect(queue.create.firstCall.args[0]).to.equal("push_notification_code_3");
+    expect(queue.create.firstCall.args[1]).to.deep.equal(jobs[0]);
+    expect(queue.create.secondCall.args[0]).to.equal(
+      "push_notification_code_3",
+    );
+    expect(queue.create.secondCall.args[1]).to.deep.equal(jobs[1]);
   });
 });
